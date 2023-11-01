@@ -37,8 +37,6 @@ def rescaleSprite(surface, scale):
     new_w = w * new_h // h
     return pygame.transform.scale(surface, (new_w, new_h))
 
-bgr = pygame.image.load("Map/map.png")
-bgr = rescaleSprite(bgr, 1.1)
 
 class Coin(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -60,7 +58,7 @@ class Coin(pygame.sprite.Sprite):
 class AddBullet(pygame.sprite.Sprite):
     def __init__(self, pos):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load('Sprites/Bullets/bullet.png')
+        self.image = pygame.image.load('Sprites/Bullets/item_Bullet.png')
         self.image = rescaleSprite(self.image, 0.05)
         self.image = pygame.transform.rotate(self.image, 45)
         self.rect = self.image.get_rect(topleft = pos)
@@ -85,7 +83,7 @@ class Bullet(pygame.sprite.Sprite):
             self.damage = 100
         if num == 2:
             self.image = pygame.image.load('Sprites/Bullets/bullet_enemy.png')
-            self.damage = 50
+            self.damage = 10
         if num == 3:
             self.image = pygame.image.load('Sprites/Bullets/bullet_boss.png')
             self.damage = 50
@@ -179,6 +177,8 @@ class Player(pygame.sprite.Sprite):
             return bullets
         return None
     def hurted(self, dam):
+        self.image = pygame.image.load('Sprites/Character/P_hurt.png')
+        self.image = rescaleSprite(self.image, 0.15)
         self.hp -= dam
         if self.hp <= 0:
             return True
@@ -278,14 +278,14 @@ class Boss(pygame.sprite.Sprite):
         self.image = pygame.image.load('Sprites/Character/boss_enemy.png')
         self.image = rescaleSprite(self.image, 0.6)
         self.bottom_distance = 40
-        self.rect = pygame.Rect(pos[0], pos[1], self.image.get_size()[0], self.image.get_size()[1]+self.bottom_distance)
+        self.rect = pygame.Rect(pos[0], pos[1], self.image.get_size()[0], self.image.geñt_size()[1]+self.bottom_distance)
         self.isJump = False
         self.vJump = V_JUMP*1.5
         self.direct = (1, 0)
         self.bulletCounter = 0
         self.bottom_limit = SCREEN_HEIGHT
         self.isFall = False
-        self.hp = 2000
+        self.hp = 5000
         self.isLeft = True
         self.delta_angle = 30
         self.num_bullets = 3
@@ -429,10 +429,20 @@ class BossHealth(pygame.sprite.Sprite):
         self.hp_bar.fill((0, 255, 0))
         self.image.blit(self.hp_bar, [500 - boss_hp_width, 5])
 class Game:
+    class BGR(pygame.sprite.Sprite):
+        def __init__(self):
+            pygame.sprite.Sprite.__init__(self)
+            self.image = pygame.image.load("Map/map.png")
+            self.image = rescaleSprite(self.image, 1.1)
+
+            self.rect = self.image.get_rect(topleft = (0, 0))
+        def trans_screen(self, dx):
+            self.rect.move_ip(-dx, 0)
     def __init__(self, screen):
         self.screen = screen
         self.player = Player((0, 0))
         self.coin_score = Score('Sprites/Items/coin1.png', 4*0.09*SCREEN_HEIGHT, 0.09*SCREEN_HEIGHT, (0, 0.1*SCREEN_HEIGHT))
+        self.bgr = self.BGR()
         self.p_bullets = pygame.sprite.Group()
         self.e_bullets = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
@@ -445,6 +455,7 @@ class Game:
 
         self.all_sprites.add(self.left_boundary)
         self.all_sprites.add(self.right_boundary)
+        self.all_sprites.add(self.bgr)
         self.p_health = PlayerHealth()
         self.b_health = BossHealth()
         for i in range(self.num_enemy):
@@ -464,7 +475,7 @@ class Game:
 
         ## Pause game
         if pressed_keys[K_q]:
-            EffStop = pygame.mixer.Sound("Sound/Eff_stop.ogg")
+            EffStop = pygame.mixer.Sound("Sound/Eff_Click.ogg")
             EffStop.play()
             EffStop.set_volume(5.0)
             self.isPaused = not self.isPaused
@@ -539,6 +550,11 @@ class Game:
             for item in pitem_collide:
                 self.coin_score.score += item.score
                 self.player.upgrade(item.addbullet)
+                if isinstance(item, Coin):
+                    item_sound = pygame.mixer.Sound("Sound/coin.flac")
+                else:
+                    item_sound = pygame.mixer.Sound("Sound/item_Bullet.wav")
+                item_sound.play()
                 item.kill()
         self.p_bullets.update()
         self.e_bullets.update()
@@ -547,7 +563,7 @@ class Game:
         self.coin_score.update()
         self.screen.fill((0, 0, 0))
 
-
+        self.screen.blit(self.bgr.image, self.bgr.rect)
         self.screen.blit(self.left_boundary.image, self.left_boundary.rect)
         self.screen.blit(self.right_boundary.image, self.right_boundary.rect)
         self.screen.blit(self.coin_score.image, self.coin_score.rect)
@@ -578,11 +594,11 @@ class Menu:
                 isTurnOnSoundGame = True
             pygame.sprite.Sprite.__init__(self)
             self.image = pygame.Surface((300, 50))
-            self.rect = pygame.Rect(490, 150, 300, 50)
+            self.rect = pygame.Rect(270, 150, 300, 50)
             self.font = pygame.font.SysFont("Arialblack", 50)
-            self.color = (255, 255, 255)
+            self.color = (255, 0, 0)
             self.textSurf = self.font.render('New Game', 2, self.color)
-            self.image.fill((88, 88, 88))
+            self.image.set_colorkey((0,0,0,0))
             self.image.blit(self.textSurf, self.textSurf.get_rect(center = (150, 25)))
             First_Click += 1
         def update(self):
@@ -591,17 +607,17 @@ class Menu:
         def __init__(self):
             pygame.sprite.Sprite.__init__(self)
             self.image = pygame.Surface((300, 50))
-            self.rect = pygame.Rect(490, 300, 300, 50)
+            self.rect = pygame.Rect(270, 300, 300, 50)
             self.font = pygame.font.SysFont("Arialblack", 50)
-            self.color = (255, 255, 255)
+            self.color = (255, 0, 0)
             self.textSurf = self.font.render('Quit', 2, self.color)
-            self.image.fill((88, 88, 88))
+            self.image.set_colorkey((0,0,0,0))
             self.image.blit(self.textSurf, self.textSurf.get_rect(center = (150, 25)))
         def update(self):
             pass
     def __init__(self, screen):
         self.screen = screen
-        background = pygame.image.load('Sprites/Menu/background.png')
+        background = pygame.image.load('Sprites/Menu/background.jpg')
         background = rescaleSprite(background, 1)
         self.newgame = self.NewGame()
         self.quit = self.Quit()
@@ -761,17 +777,23 @@ while running:
             if menu and menu.newgame.rect.collidepoint(event.pos):
                 inGame = True
                 game = Game(screen)
+                eff_click = pygame.mixer.Sound("Sound/Eff_Click.ogg")
+                eff_click.play()
                 menu = None
             elif menu and menu.quit.rect.collidepoint(event.pos):
                 running = False
             elif gameover and gameover.go2menu.rect.collidepoint(event.pos):
                 screen.fill((0, 0, 0))
                 menu = Menu(screen)
+                eff_click = pygame.mixer.Sound("Sound/Eff_Click.ogg")
+                eff_click.play()
             elif gameover and gameover.quit.rect.collidepoint(event.pos):
                 running = False
             elif vict and vict.go2menu.rect.collidepoint(event.pos):
                 screen.fill((0, 0, 0))
                 menu = Menu(screen)
+                eff_click = pygame.mixer.Sound("Sound/Eff_Click_ogg")
+                eff_click.play()
             elif vict and vict.quit.rect.collidepoint(event.pos):
                 running = False
     if inGame:
